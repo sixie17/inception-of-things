@@ -37,95 +37,67 @@ This creates a 2-node cluster where the server manages the cluster and both node
 
 ## Current Setup
 
-### Virtual Machine Configuration
-- **Name**: `ysakineS`
-- **Base Image**: `ubuntu/bionic64` (Ubuntu 18.04)
-- **Provider**: VirtualBox
-- **Resources**:
-  - Memory: 1024 MB
-  - CPUs: 1
+### Virtual Machines
+- `ysakineS` (server/control plane + can run workloads)
+- `ysakineSW` (agent/worker)
+- Base box: `ubuntu/bionic64` (Ubuntu 18.04)
+- Provider: VirtualBox; resources: 1 vCPU, 1 GB RAM each
 
 ### Networking
-- **NAT Adapter** (enp0s3): `10.0.2.15` (default, for internet access)
-- **Host-Only Adapter** (enp0s8): `192.168.56.110` (for host-to-VM communication)
-- **SSH Forwarded Port**: Guest port 22 → Host port 1337
+- NAT adapter (internet): `10.0.2.15`
+- Host-only adapter: `192.168.56.0/24`
+  - Server IP: `192.168.56.110`
+  - Worker IP: `192.168.56.111`
+- SSH forward: server 22→1337, worker 22→1338
 
-### Provisioning (Current)
-The VM is provisioned with:
-1. **Static IP Configuration**: Sets up udev rules to ensure eth1 interface gets the static IP `192.168.56.110`
-2. **K3s Installation**: Installs Kubernetes via K3s using the official installer script
-3. **Firewall Rules**: Enables UFW firewall with necessary ports:
-   - `6443/tcp` - Kubernetes API server
-   - `8472/udp` - Flannel VXLAN
-   - `10250/tcp` - Kubelet API
+### Provisioning (now in scripts/)
+- `scripts/install-k3s-server.sh`
+  - Detects host-only interface/IP, generates random join token, writes to `/vagrant/confs/k3s-token.txt`
+  - Installs k3s server bound to the private IP, sets kubeconfig mode 0644
+  - Disables ufw, copies kubeconfig to `/home/vagrant/.kube/config` and to `/vagrant/confs/k3s.yaml`
+- `scripts/install-k3s-agent.sh`
+  - Waits for token file and API reachability, detects worker private IP/interface
+  - Installs k3s agent with `K3S_URL=https://192.168.56.110:6443` and the shared token
+  - Copies kubeconfig from shared folder to `~/.kube/config` for kubectl without sudo
 
 ## How to Use
 
-### Start the VM
+Start both VMs and reprovision:
 ```bash
-# the flag forces the provisionning script
-vagrant up --provision 
+vagrant up --provision
 ```
 
-### SSH into the VM
-```bash
-# Using Vagrant
-vagrant ssh ysakineS
-
-# Or using SSH directly on host port 1337
-ssh -i .vagrant/machines/ysakineS/virtualbox/private_key vagrant@127.0.0.1 -p 1337
-```
-
-### Access Kubernetes
-Once provisioned, K3s is running inside the VM:
+Check cluster from the server:
 ```bash
 vagrant ssh ysakineS
-sudo kubectl get nodes
-sudo kubectl get pods --all-namespaces
+kubectl get nodes -o wide
 ```
 
-### Stop/Destroy the VM
+Check from the worker (uses shared kubeconfig):
 ```bash
-vagrant halt        # Stop the VM
-vagrant destroy     # Delete the VM entirely
+vagrant ssh ysakineSW
+kubectl get nodes -o wide
 ```
 
-## Future Plans
-
-### Refactor Provisioning to External Scripts
-The current inline provisioning script will be moved to the `scripts/` directory for better maintainability:
-
-- **scripts/setup-network.sh** - Handle network configuration and static IP setup
-- **scripts/install-k3s.sh** - K3s installation and configuration
-- **scripts/setup-firewall.sh** - UFW firewall rules
-
-The Vagrantfile will be updated to call these scripts:
-```ruby
-config.vm.provision "shell", path: "scripts/setup-network.sh"
-config.vm.provision "shell", path: "scripts/install-k3s.sh"
-config.vm.provision "shell", path: "scripts/setup-firewall.sh"
+Stop / destroy:
+```bash
+vagrant halt
+vagrant destroy -f
 ```
-
-This will allow for:
-- Better code organization and reusability
-- Easier debugging and testing of individual components
-- Potential sharing of scripts with other VMs (e.g., `ysakineSW` worker node)
 
 ## Project Structure
 ```
 p1/
-├── Vagrantfile              # Vagrant configuration
-├── README.md                # This file
-├── confs/                   # Configuration files (for future use)
-└── scripts/                 # Provisioning scripts (to be populated)
-    ├── setup-network.sh     # (Planned)
-    ├── install-k3s.sh       # (Planned)
-    └── setup-firewall.sh    # (Planned)
+├── Vagrantfile
+├── README.md
+├── confs/
+│   ├── k3s-token.txt        # generated join token (server writes)
+│   └── k3s.yaml             # kubeconfig shared to worker
+└── scripts/
+    ├── install-k3s-server.sh
+    └── install-k3s-agent.sh
 ```
 
-## Notes
-- **Current Status**: Server node (`ysakineS`) is configured and running k3s server
-- **Next Step**: Add the worker node (`ysakineSW`) to create a full 2-node cluster
-- K3s automatically starts on boot, making the cluster immediately available after VM startup
-- Both VMs are resource-constrained (1 CPU, 1GB RAM each) suitable for development/testing; adjust in Vagrantfile for production
-- Network interfaces in the guest OS use predictable naming (`enp0s3`, `enp0s8`) instead of `eth0`/`eth1`
+## Notes / TODO
+- Current status: two-node cluster provisions; server binds on host-only IP, agent joins via shared token.
+- TODO: add health checks/ready-wait in agent for faster failure on bad networking; optional ufw rules if re-enabled; adjust resources if workloads need more than 1 vCPU/1 GB.
