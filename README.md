@@ -70,6 +70,27 @@ Kubernetes doesn't run containers directly; it relies on a **Container Runtime**
 
 ---
 
+## New Concepts Learned
+
+### Namespaces
+Namespaces provide logical isolation within a cluster and help organize resources by team, environment, or project.
+
+**Key points:**
+- Default namespace is `default` if none specified
+- Same resource names can exist in different namespaces
+- Useful for separating environments (dev/stage/prod)
+
+**Example:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+    name: hello
+    namespace: my-apps
+```
+
+---
+
 ## Project READMEs
 - [p1/README.md](p1/README.md)
 - [p2/README.MD](p2/README.MD)
