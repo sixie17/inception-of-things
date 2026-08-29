@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitlab
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-root-password
+  namespace: gitlab
+type: Opaque
+stringData:
+  password: "SECRETword1337"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      containers:
+        - name: gitlab
+          image: gitlab/gitlab-ce:19.3
+          env:
+            - name: GITLAB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitlab-root-password
+                  key: password
+            - name: GITLAB_OMNIBUS_CONFIG
+              value: |
+                external_url 'http://gitlab.gitlab.svc.cluster.local'
+                gitlab_rails['gitlab_shell_ssh_port'] = 22
+                prometheus_monitoring['enable'] = false
+                gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 22
+              name: ssh
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          readinessProbe:
+            httpGet:
+              path: /-/readiness
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 60
+          volumeMounts:
+            - name: gitlab-config
+              mountPath: /etc/gitlab
+            - name: gitlab-data
+              mountPath: /var/opt/gitlab
+            - name: gitlab-logs
+              mountPath: /var/log/gitlab
+      volumes:
+        - name: gitlab-config
+          emptyDir: {}
+        - name: gitlab-data
+          emptyDir: {}
+        - name: gitlab-logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  selector:
+    app: gitlab
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: ssh
+      port: 22
+      targetPort: 22

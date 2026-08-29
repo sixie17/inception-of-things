@@ -25,7 +25,7 @@ until curl -k --http1.1 -sS -o /dev/null https://192.168.56.110:6443 || nc -z 19
 done
 
 # Install agent
-curl -sfL https://get.k3s.io | K3S_URL="https://192.168.56.110:6443" K3S_TOKEN="$TOKEN" sh -s - agent \
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.28.15+k3s1" K3S_URL="https://192.168.56.110:6443"  K3S_TOKEN="$TOKEN" sh -s - agent \
   --node-ip="$NODE_IP" \
   --node-external-ip="$NODE_IP" \
   --flannel-iface="$IFACE"

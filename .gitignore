@@ -1,3 +1,4 @@
 .vagrant/
 *.log
 k3s-token.txt
+./bonus/gitlab-repo/infra

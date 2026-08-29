@@ -3,7 +3,7 @@ set -euo pipefail
 
 apt-get update -y
 
-curl -sfL https://get.k3s.io | sh -s - server \
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.28.15+k3s1" sh -s - server \
     --write-kubeconfig-mode=0644
 
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

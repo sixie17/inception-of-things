@@ -17,7 +17,7 @@ TOKEN=$(openssl rand -base64 32)
 mkdir -p /vagrant/confs
 echo "$TOKEN" > /vagrant/confs/k3s-token.txt
 
-curl -sfL https://get.k3s.io | sh -s - server \
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.28.15+k3s1" sh -s - server \
   --bind-address=0.0.0.0 \
   --advertise-address="$NODE_IP" \
   --node-ip="$NODE_IP" \
