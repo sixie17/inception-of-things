@@ -1,5 +1,7 @@
 k3d cluster create p3 -p "8888:80@loadbalancer"
 
+kubectl config use-context k3d-p3
+
 kubectl create namespace argocd
 kubectl create namespace dev
 
