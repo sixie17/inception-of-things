@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smokeybull-app
+  namespace: dev
+spec:
+  selector:
+    app: smokeybul-app
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer
