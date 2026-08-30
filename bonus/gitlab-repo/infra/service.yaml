@@ -5,10 +5,10 @@ metadata:
   namespace: dev
 spec:
   selector:
-    app: smokeybul-app
+    app: smokeybull-app
   ports:
   - name: http
     port: 80
     targetPort: 3000
     protocol: TCP
-  type: LoadBalancer
+  type: ClusterIP
