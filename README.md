@@ -1,5 +1,57 @@
 ### Learning Material is following this youtube [video](https://www.youtube.com/watch?v=2T86xAtR6Fo)
 
+# Inception-of-Things
+
+The Kubernetes/DevOps project split into four stages. Each stage keeps everything the previous one taught and swaps out exactly one thing — starting with two hand-bootstrapped VMs and ending with a fully self-contained, self-hosted GitOps loop.
+
+```mermaid
+flowchart LR
+    P1["p1\nVagrant + K3s\n2 VMs: controller + agent"]
+    P2["p2\nK3s + Ingress\n3 apps, routed by Host header"]
+    P3["p3\nK3d + Argo CD\nGitOps from GitHub"]
+    BONUS["bonus\nGitLab\nGitOps from local GitLab"]
+    P1 -->|same K3s install| P2
+    P2 -->|same Ingress pattern| P3
+    P3 -->|same cluster, repoURL repointed| BONUS
+```
+
+## p1 — Two VMs learn to be one cluster
+**Tools:** Vagrant · VirtualBox · K3s
+Two real virtual machines: `ysakineS` (192.168.56.110) runs K3s in **server/controller** mode, `ysakineSW` (192.168.56.111) runs it in **agent** mode and joins the first over a shared token. The least automated version of "a Kubernetes cluster" — everything here is done by hand, on purpose, to learn what a cluster actually is underneath the tooling.
+**Concepts introduced:** Vagrantfile as a VM recipe, controller/agent roles, static private-network IPs, `kubectl`.
+
+## p2 — One cluster learns to route
+**Tools:** K3s · Traefik Ingress
+Same K3s install, now on a single VM, running three small web apps. New problem: one IP, three destinations — solved with an **Ingress** resource that routes purely on the incoming request's `Host` header (`app1.com` → app1, `app2.com` → app2 with 3 replicas, anything else → app3 by default).
+**Concepts introduced:** Ingress rules, Host-header routing, Deployments & replicas, Services.
+
+## p3 — The cluster starts watching Git
+**Tools:** K3d · Argo CD · GitHub
+The VM disappears — **K3d** runs the whole cluster as Docker containers instead of a VM. And deployment stops being something you do by hand: **Argo CD** watches a GitHub repo's `infra/` folder and continuously reconciles the cluster to match it. Two namespaces: `argocd` (the GitOps controller) and `dev` (the deployed app). Push a new image tag to GitHub, and the app updates itself with no command from you — this is **GitOps**.
+**Concepts introduced:** K3d (K3s-in-Docker), GitOps, the Argo CD `Application` resource (`repoURL`/`path`/`targetRevision`/`destination`), automated sync + self-heal.
+
+## bonus — Git moves inside the cluster
+**Tools:** GitLab CE · Argo CD (repointed)
+The one thing p3 still depended on the outside world for — GitHub — moves in-house. A self-hosted **GitLab** instance runs as its own pod, in its own `gitlab` namespace, inside the *same* k3d cluster. Argo CD's `Application` is repointed from GitHub's URL to GitLab's **internal cluster DNS** (`gitlab.gitlab.svc.cluster.local`) — everything else (the `dev` namespace, the Ingress, the app) is untouched. The result: the exact same GitOps loop as p3, but with zero dependency on the internet.
+**Concepts introduced:** self-hosted git server, in-cluster Service DNS, repointing a GitOps source, a fully local CI/CD loop.
+
+### Which concept appears where
+
+| Concept              | p1               | p2            | p3                    | bonus                     |
+|-----------------------|------------------|---------------|------------------------|----------------------------|
+| VM (Vagrant)          | server + agent   | single VM     | — (containers instead) | —                          |
+| K3s / K3d             | K3s              | K3s           | K3d                    | K3d (same cluster)         |
+| Namespaces             | default only     | default only  | `argocd`, `dev`        | + `gitlab`                 |
+| Ingress / routing      | —                | 3 hosts       | 1 app                  | + `gitlab.localhost`       |
+| GitOps (Argo CD)       | —                | —             | watches GitHub         | watches GitLab             |
+| Git server              | —                | —             | GitHub (external)      | GitLab (in-cluster)        |
+
+### The point of all four stages
+
+Nothing conceptually new happens after p1 — every later stage applies the same idea (a desired state, declared and reconciled) to a bigger problem. p1 proves a cluster can be bootstrapped by hand; p2 proves it can route real traffic; p3 replaces "by hand" with GitOps; the bonus proves that GitOps loop doesn't need the internet at all. By the end, p3 and the bonus are describable in the same four words — **Argo CD watches a repo** — only *where* that repo lives has moved.
+
+---
+
 # Kubernetes (K8s) Architecture & Concepts
 
 ## Introduction
@@ -94,3 +146,4 @@ metadata:
 ## Project READMEs
 - [p1/README.md](p1/README.md)
 - [p2/README.MD](p2/README.MD)
+- [p3/README.md](p3/README.md)
