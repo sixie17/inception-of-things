@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: gitlab
-          image: gitlab/gitlab-ce:19.3
+          image: gitlab/gitlab-ce:17.5.2-ce.0
           env:
             - name: GITLAB_ROOT_PASSWORD
               valueFrom:
