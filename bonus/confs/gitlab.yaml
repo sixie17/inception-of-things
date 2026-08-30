@@ -3,15 +3,6 @@ kind: Namespace
 metadata:
   name: gitlab
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: gitlab-root-password
-  namespace: gitlab
-type: Opaque
-stringData:
-  password: "SECRETword1337"
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
