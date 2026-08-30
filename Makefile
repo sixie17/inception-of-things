@@ -39,8 +39,7 @@ p3-down:
 
 # --- Bonus: GitLab running inside the p3 cluster ---
 bonus:
-	kubectl apply -f bonus/confs/gitlab.yaml
-	kubectl apply -f bonus/confs/argocd.yaml
+	cd bonus && bash scripts/run-gitlab.sh
 
 bonus-down:
 	kubectl delete namespace gitlab
