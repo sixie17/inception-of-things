@@ -18,16 +18,18 @@ help:
 
 # --- Part 1: K3s + Vagrant (2 VMs: server + agent) ---
 p1:
-	cd p1 && vagrant up
+	cd p1 && vagrant up --provision
 
 p1-down:
+	cd p1 && vagrant halt
 	cd p1 && vagrant destroy -f
 
 # --- Part 2: K3s + 3 apps behind Ingress (1 VM) ---
 p2:
-	cd p2 && vagrant up
+	cd p2 && vagrant up --provision
 
 p2-down:
+	cd p2 && vagrant halt
 	cd p2 && vagrant destroy -f
 
 # --- Part 3: K3d + Argo CD ---

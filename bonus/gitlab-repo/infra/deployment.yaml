@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name: app-container
-        image: sixiecow/inception-of-things:v1
+        image: sixiecow/inception-of-things:v2
         ports:
         - containerPort: 3000

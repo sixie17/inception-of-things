@@ -20,7 +20,8 @@ kubectl apply -f confs/ingress.dev.yaml
 kubectl apply -f confs/ingress.gitlab.yaml
 
 GITLAB_PASSWORD=$(kubectl -n gitlab get secret gitlab-root-password -o jsonpath='{.data.password}' | base64 -d)
-REPO_URL="http://root:${GITLAB_PASSWORD}@gitlab.localhost:8888/root/inception-of-things-argocd.git"
+GITLAB_PASSWORD_URLENC=$(jq -rn --arg v "$GITLAB_PASSWORD" '$v|@uri')
+REPO_URL="http://root:${GITLAB_PASSWORD_URLENC}@gitlab.localhost:8888/root/inception-of-things-argocd.git"
 
 # Create the GitLab project 
 kubectl -n gitlab exec deployment/gitlab -- gitlab-rails runner "
